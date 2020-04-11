@@ -1,0 +1,35 @@
+---
+- hosts: localhost
+  connection: local
+  
+  vars:
+    flatpak_gtk_package: org.gtk.Gtk3theme.Qogir-dark
+    gtk_theme_name: Qogir-dark
+    flatpak_apps_dir: "{{ ansible_env.HOME }}/.var/app"
+  
+  tasks:
+    - name: Install flatpak GTK theme
+      flatpak:
+        name: "{{ flatpak_gtk_package }}"
+        state: present
+
+    - name: Get flatpak app directories
+      find:
+        paths: "{{ flatpak_apps_dir }}"
+        file_type: directory 
+      register: "app_dirs"
+
+    - name: Ensure gtk-3.0 settings.ini file exists
+      lineinfile:
+        path: "{{ item.path }}/config/gtk-3.0/settings.ini"
+        regexp: '\[Settings\]'
+        line: "[Settings]"
+        create: yes				
+      loop:  "{{ app_dirs.files }}"
+
+    - name: Set GTK theme
+      lineinfile:
+        path: "{{ item.path }}/config/gtk-3.0/settings.ini"
+        regexp: "gtk-theme-name="
+        line: "gtk-theme-name={{ gtk_theme_name }}"
+      loop: "{{ app_dirs.files }}"
